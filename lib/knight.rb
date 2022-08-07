@@ -38,7 +38,10 @@ class KnightMoves
 
     x, y = coordinate
     next_moves = []
-    8.times { |i| next_moves[i] = [x + row[i], y + col[i]] }
+    8.times do |i|
+      next_move = [x + row[i], y + col[i]]
+      next_moves.push(next_move) if next_move.all? { |axis| (0..7).include?(axis) }
+    end
     next_moves
   end
 end
