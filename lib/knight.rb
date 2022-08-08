@@ -5,7 +5,9 @@ class Knight
 
   def move(current_pos, target_pos)
     moves_tree = KnightMoves.new(current_pos)
-    moves_tree.print_coordinates
+    path = moves_tree.find_path(target_pos)
+    puts "You made it in #{path.size} moves! Here's your path:"
+    p path.map(&:coordinate)
   end
 end
 
@@ -14,22 +16,37 @@ class KnightMoves
     @current_pos = build_move_tree(coordinate)
   end
 
-  def print_coordinates
-    query = [@current_pos]
-    until query.empty?
-      p query.first.pos
-      query.first.moves.each { |move| query.push(move) unless move.nil? }
-      query.shift
+  def find_path(target_coordinate)
+    target = find(target_coordinate)
+    path = [target]
+    for pos in path
+      path << pos.ancestor unless pos.ancestor.nil?
     end
+    path.reverse
   end
 
   private
 
+  def find(coordinate)
+    query = [@current_pos]
+    until query.empty?
+      pos = query.shift
+      return pos if pos.coordinate == coordinate
+
+      generate_next_moves(pos) if pos.next_moves.all?(:nil?)
+      pos.next_moves.each { |move| query.push(move) unless move.nil? }
+    end
+  end
+
   def build_move_tree(coordinate)
     root_pos = KnightPos.new(coordinate)
-    next_moves = calculate_next_moves(coordinate)
-    root_pos.moves = next_moves.map { |next_move| KnightPos.new(next_move) }
-    root_pos
+    generate_next_moves(root_pos)
+  end
+
+  def generate_next_moves(current_pos)
+    next_moves = calculate_next_moves(current_pos.coordinate)
+    current_pos.next_moves = next_moves.map { |next_move| KnightPos.new(next_move, current_pos) }
+    current_pos
   end
 
   def calculate_next_moves(coordinate)
@@ -47,11 +64,12 @@ class KnightMoves
 end
 
 class KnightPos
-  attr_reader :pos
-  attr_accessor :moves
+  attr_reader :coordinate, :ancestor
+  attr_accessor :next_moves
 
-  def initialize(pos, moves = [])
-    @pos = pos
-    @moves = moves
+  def initialize(pos, ancestor = nil, moves = [])
+    @coordinate = pos
+    @ancestor = ancestor
+    @next_moves = moves
   end
 end
