@@ -1,40 +1,37 @@
 class MoveTree
   def initialize(coordinate, board)
     @board = board
-    @current_pos = build_move_tree(coordinate)
+    @initial_node = MoveNode.new(coordinate)
+    generate_next_moves(@initial_node)
   end
 
   def find_path(target_coordinate)
-    target = find(target_coordinate)
-    path = [target]
-    for pos in path
-      path << pos.ancestor unless pos.ancestor.nil?
+    path = []
+    current_node = find(target_coordinate)
+    until current_node.nil?
+      path.unshift(current_node.coordinate)
+      current_node = current_node.ancestor
     end
-    path.reverse
+    path
   end
 
   private
 
   def find(coordinate)
-    query = [@current_pos]
+    query = [@initial_node]
     until query.empty?
-      pos = query.shift
-      return pos if pos.coordinate == coordinate
+      node = query.shift
+      return node if node.coordinate == coordinate
 
-      generate_next_moves(pos) if pos.next_moves.all?(:nil?)
-      pos.next_moves.each { |move| query.push(move) unless move.nil? }
+      generate_next_moves(node) if node.next_moves.all?(:nil?)
+      node.next_moves.each { |move| query.push(move) unless move.nil? }
     end
   end
 
-  def build_move_tree(coordinate)
-    root_pos = MoveNode.new(coordinate)
-    generate_next_moves(root_pos)
-  end
-
-  def generate_next_moves(current_pos)
-    next_moves = calculate_next_moves(current_pos.coordinate)
-    current_pos.next_moves = next_moves.map { |next_move| MoveNode.new(next_move, current_pos) }
-    current_pos
+  def generate_next_moves(node)
+    next_moves = calculate_next_moves(node.coordinate)
+    node.next_moves = next_moves.map { |next_move| MoveNode.new(next_move, node) }
+    node
   end
 
   def calculate_next_moves(coordinate)
@@ -55,9 +52,9 @@ class MoveNode
   attr_reader :coordinate, :ancestor
   attr_accessor :next_moves
 
-  def initialize(pos, ancestor = nil, moves = [])
-    @coordinate = pos
+  def initialize(coordinate, ancestor = nil)
+    @coordinate = coordinate
     @ancestor = ancestor
-    @next_moves = moves
+    @next_moves = []
   end
 end
